@@ -32,6 +32,7 @@ repositories {
 docker {
     dockerBinary "/usr/local/bin/docker"
     maintainer "Rik Brown <rik@rik.codes>"
+    baseImage "openjdk:8"
 }
 
 dependencies {
