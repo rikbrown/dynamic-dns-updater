@@ -29,12 +29,6 @@ repositories {
     maven { url "http://dl.bintray.com/jetbrains/spek" }
 }
 
-docker {
-    dockerBinary "/usr/local/bin/docker"
-    maintainer "Rik Brown <rik@rik.codes>"
-    baseImage "arm32v7/openjdk:8"
-}
-
 dependencies {
     // Kotlin
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
@@ -77,4 +71,24 @@ jar {
     from {
         configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
     }
+}
+
+docker {
+    dockerBinary "/usr/local/bin/docker"
+    maintainer "Rik Brown <rik@rik.codes>"
+}
+
+task distDocker_arm32v7(type: Docker) {
+    dependsOn jar
+    docker { baseImage 'arm32v7/openjdk:8' }
+    applicationName = applicationName + "-arm32v7"
+    addFile(project.distTar.outputs.files.singleFile)
+    entryPoint(["/${applicationName}/bin/${project.applicationName}"])
+}
+
+task distDocker_x64(type: Docker) {
+    dependsOn jar
+    docker { baseImage 'openjdk:8' }
+    addFile(project.distTar.outputs.files.singleFile)
+    entryPoint(["/${applicationName}/bin/${project.applicationName}"])
 }
