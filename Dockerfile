@@ -1,4 +1,4 @@
-FROM openjdk:8
+FROM adoptopenjdk/openjdk8
 MAINTAINER Rik Brown <rik@rik.codes>
 ADD dynamic-dns-updater-1.0-SNAPSHOT.tar /
 ENTRYPOINT ["/dynamic-dns-updater-1.0-SNAPSHOT/bin/dynamic-dns-updater"]
