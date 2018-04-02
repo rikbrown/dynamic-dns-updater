@@ -82,12 +82,27 @@ docker {
     buildArgs([OPENJDK: 'openjdk:8'])
 }
 
-task docker_arm32v7 {
+task arm32v7 {
     docker {
         name 'hub.docker.com/rikbrown/dynamic-dns-updater-arm32v7'
         buildArgs([OPENJDK: 'arm32v7/openjdk:8'])
     }
 }
 
-tasks.docker.finalizedBy docker_arm32v7
+task x64 {
+    docker {
+        name 'hub.docker.com/rikbrown/dynamic-dns-updater'
+        buildArgs([OPENJDK: 'openjdk:8'])
+    }
+}
+
+task docker_arm32v7 {
+    dependsOn 'arm32v7'
+    dependsOn 'docker'
+}
+
+task docker_x64 {
+    dependsOn 'x64'
+    dependsOn 'docker'
+}
 
