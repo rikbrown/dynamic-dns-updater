@@ -5,28 +5,30 @@ buildscript {
         mavenCentral()
     }
     dependencies {
+        classpath "local-plugins:library:1.0"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'org.junit.platform:junit-platform-gradle-plugin:1.1.0'
-        classpath 'se.transmode.gradle:gradle-docker:1.2'
     }
 }
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.2.31'
+    id 'idea'
+    id 'application'
+    id 'com.palantir.docker' version '0.19.2'
+}
+
 
 group 'codes.rik'
 version '1.0-SNAPSHOT'
 
-apply plugin: 'org.jetbrains.kotlin.jvm'
-apply plugin: 'org.junit.platform.gradle.plugin'
-apply plugin: 'application'
-apply plugin: 'docker'
-
-group = "rikcodes"
 sourceCompatibility = 1.8
 mainClassName = "codes.rik.dynamicdnsupdater.App"
 
 repositories {
     mavenCentral()
     jcenter()
-    maven { url "http://dl.bintray.com/jetbrains/spek" }
+    maven { url 'http://dl.bintray.com/jetbrains/spek' }
 }
 
 dependencies {
@@ -66,7 +68,7 @@ compileTestKotlin {
 
 jar {
     manifest {
-        attributes 'Main-Class': 'codes.rik.dynamicdnsupdater.App'
+        attributes 'Main-Class': mainClassName
     }
     from {
         configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
@@ -74,21 +76,7 @@ jar {
 }
 
 docker {
-    dockerBinary "/usr/local/bin/docker"
-    maintainer "Rik Brown <rik@rik.codes>"
-}
-
-task distDocker_arm32v7(type: Docker) {
-    dependsOn jar
-    docker { baseImage 'arm32v7/openjdk:8' }
-    applicationName = applicationName + "-arm32v7"
-    addFile(project.distTar.outputs.files.singleFile)
-    entryPoint(["/${applicationName}/bin/${project.applicationName}"])
-}
-
-task distDocker_x64(type: Docker) {
-    dependsOn jar
-    docker { baseImage 'openjdk:8' }
-    addFile(project.distTar.outputs.files.singleFile)
-    entryPoint(["/${applicationName}/bin/${project.applicationName}"])
+    name 'hub.docker.com/rikbrown/dynamic-dns-updater'
+    tags 'latest'
+    files tasks.distTar.outputs
 }
