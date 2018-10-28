@@ -1,21 +1,22 @@
 buildscript {
-    ext.kotlin_version = '1.2.31'
+    ext.kotlin_version = '1.3.0-rc-198'
 
     repositories {
         mavenCentral()
     }
     dependencies {
-        classpath "local-plugins:library:1.0"
+//        classpath "local-plugins:library:1.0"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'org.junit.platform:junit-platform-gradle-plugin:1.1.0'
     }
 }
 
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '1.2.31'
+    id 'org.jetbrains.kotlin.jvm' version '1.3.0-rc-198'
     id 'idea'
     id 'application'
-    id 'com.palantir.docker' version '0.19.2'
+    id "com.palantir.docker" version "0.20.1"
+    id "com.palantir.docker-run" version "0.20.1"
 }
 
 
@@ -34,6 +35,7 @@ repositories {
 dependencies {
     // Kotlin
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 
     // AWS
     compile group: 'com.amazonaws', name: 'aws-java-sdk-route53', version: '1.11.306'
@@ -61,6 +63,7 @@ dependencies {
 
 compileKotlin {
     kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.freeCompilerArgs += ["-XXLanguage:+InlineClasses"]
 }
 compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
@@ -76,33 +79,9 @@ jar {
 }
 
 docker {
-    name 'hub.docker.com/rikbrown/dynamic-dns-updater'
+    dependsOn jar
+    name 'rikbrown/dynamic-dns-updater'
     tags 'latest'
     files tasks.distTar.outputs
-    buildArgs([OPENJDK: 'openjdk:8'])
+    buildArgs([OPENJDK: 'openjdk:11.0.1'])
 }
-
-task arm32v7 {
-    docker {
-        name 'hub.docker.com/rikbrown/dynamic-dns-updater-arm32v7'
-        buildArgs([OPENJDK: 'arm32v7/openjdk:8'])
-    }
-}
-
-task x64 {
-    docker {
-        name 'hub.docker.com/rikbrown/dynamic-dns-updater'
-        buildArgs([OPENJDK: 'openjdk:8'])
-    }
-}
-
-task docker_arm32v7 {
-    dependsOn 'arm32v7'
-    dependsOn 'docker'
-}
-
-task docker_x64 {
-    dependsOn 'x64'
-    dependsOn 'docker'
-}
-

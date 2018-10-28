@@ -14,26 +14,18 @@ class Route53DnsUpdater(
         private val route53: AmazonRoute53,
         private val hostedZoneId: String,
         private val record: String,
-        private val ipProvider: () -> String,
-        private val dnsLookup: (String) -> String = { dnsName -> InetAddress.getByName(dnsName).hostAddress }) {
+        private val dnsLookup: (String) -> IpAddress = { dnsName -> IpAddress(InetAddress.getByName(dnsName).hostAddress) }): IpChangeListener {
+
+    override fun onIpChange(ipAddress: IpAddress) = update(ipAddress)
 
     /**
-     * Update the IP address configured for [record] with the address provided by [ipProvider]
+     * Update the IP address configured for [record].
      * Will only perform an update if it is required (DNS and AWS both disagree with the new address).
      */
-    fun update() {
-        val currentIpAddress = ipProvider()
-        logger.debug { "Current IP address: $currentIpAddress" }
+    private fun update(ipAddress: IpAddress) {
+        logger.debug { "Current IP address: $ipAddress" }
 
-        val existingIpAddressDns = dnsLookup(record)
-        logger.debug { "IP address in DNS: $existingIpAddressDns" }
-        if (existingIpAddressDns == currentIpAddress) return // DNS IP matches current IP, no change needed
-
-        val existingIpAddressAws = getExistingIpAddress()
-        logger.debug { "IP address in AWS: $existingIpAddressAws" }
-        if (existingIpAddressAws == currentIpAddress) return // AWS IP matches current IP, no change needed (probably cached)
-
-        logger.info { "Change detected, updating IP address to $currentIpAddress" }
+        logger.info { "Change detected, updating IP address to $ipAddress" }
         route53.changeResourceRecordSets(ChangeResourceRecordSetsRequest()
                 .withHostedZoneId(hostedZoneId)
                 .withChangeBatch(ChangeBatch()
@@ -43,23 +35,7 @@ class Route53DnsUpdater(
                                         .withName(record)
                                         .withType(RRType.A)
                                         .withTTL(60)
-                                        .withResourceRecords(ResourceRecord(currentIpAddress))))))
-    }
-
-    /**
-     * Returns the existing IP address configured in [AmazonRoute53] for [record], or null if nothing appears to be
-     * configured.
-     */
-    fun getExistingIpAddress(): String? {
-        val response = route53.listResourceRecordSets(ListResourceRecordSetsRequest()
-                .withHostedZoneId(hostedZoneId)
-                .withStartRecordName(record)
-                .withMaxItems("1"))
-
-        return response.resourceRecordSets
-                .firstOrNull()
-                ?.resourceRecords?.firstOrNull()
-                ?.value
+                                        .withResourceRecords(ResourceRecord(ipAddress.value))))))
     }
 
 }
